@@ -137,4 +137,8 @@ interface AirSyncRepository {
 
     suspend fun setNotifyOnCrashEnabled(enabled: Boolean)
     fun getNotifyOnCrashEnabled(): Flow<Boolean>
+    
+    // Cellular Network Sync
+    suspend fun setCellularSyncEnabled(enabled: Boolean)
+    fun isCellularSyncEnabled(): Flow<Boolean>
 }

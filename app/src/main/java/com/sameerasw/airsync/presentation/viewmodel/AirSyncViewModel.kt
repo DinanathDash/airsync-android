@@ -248,6 +248,13 @@ class AirSyncViewModel(
             }
         }
 
+        // Observe Cellular Sync preference
+        viewModelScope.launch {
+            repository.isCellularSyncEnabled().collect { enabled ->
+                _uiState.value = _uiState.value.copy(isCellularSyncEnabled = enabled)
+            }
+        }
+
         // Observe BLE connection status
         viewModelScope.launch {
             com.sameerasw.airsync.AirSyncApp.getBleConnectionManager()?.connectionState?.collect { state ->
@@ -375,6 +382,7 @@ class AirSyncViewModel(
             val isBlurProblematic = DeviceInfoUtil.isBlurProblematicDevice()
             val isQuickShareEnabled = repository.isQuickShareEnabled().first()
             val isNotifyOnCrashEnabled = repository.getNotifyOnCrashEnabled().first()
+            val isCellularSyncEnabled = repository.isCellularSyncEnabled().first()
 
             // Replicate Essentials logic for initial state
             val isBlurEnabled = isBlurEnabledSetting && !isPowerSaveMode && !isBlurProblematic
@@ -437,7 +445,8 @@ class AirSyncViewModel(
                 isBlurEnabled = isBlurEnabled,
                 isOnboardingCompleted = !isFirstRun,
                 isQuickShareEnabled = isQuickShareEnabled,
-                isNotifyOnCrashEnabled = isNotifyOnCrashEnabled
+                isNotifyOnCrashEnabled = isNotifyOnCrashEnabled,
+                isCellularSyncEnabled = isCellularSyncEnabled
             )
 
             updateRatingPromptDisplay()
@@ -763,6 +772,13 @@ class AirSyncViewModel(
         _uiState.value = _uiState.value.copy(isNotifyOnCrashEnabled = enabled)
         viewModelScope.launch {
             repository.setNotifyOnCrashEnabled(enabled)
+        }
+    }
+
+    fun toggleCellularSync(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(isCellularSyncEnabled = enabled)
+        viewModelScope.launch {
+            repository.setCellularSyncEnabled(enabled)
         }
     }
 
