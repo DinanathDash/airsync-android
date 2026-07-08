@@ -42,7 +42,8 @@ fun LastConnectedDeviceCard(
     isAutoReconnectEnabled: Boolean,
     onToggleAutoReconnect: (Boolean) -> Unit,
     onQuickConnect: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     val haptics = LocalHapticFeedback.current
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -155,6 +156,7 @@ fun LastConnectedDeviceCard(
             title = stringResource(R.string.bluetooth_settings_card_title),
             description = stringResource(R.string.bluetooth_settings_card_desc),
             showToggle = false,
+            enabled = enabled,
             onClick = {
                 HapticUtil.performClick(haptics)
                 showBottomSheet = true

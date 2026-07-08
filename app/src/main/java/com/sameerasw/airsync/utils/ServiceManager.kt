@@ -23,6 +23,12 @@ object ServiceManager {
         val isAutoReconnectEnabled = dataStore.getAutoReconnectEnabled().first()
         val isDiscoveryEnabled = dataStore.getDeviceDiscoveryEnabled().first()
 
+        val isKillSwitchModeEnabled = dataStore.isKillSwitchModeEnabled().first()
+
+        if (isKillSwitchModeEnabled) {
+            return false
+        }
+
         // Service needs to run if:
         // 1. We are currently connected
         // 2. We need to auto-reconnect in the background

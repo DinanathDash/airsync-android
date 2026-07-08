@@ -839,7 +839,8 @@ fun AirSyncMainScreen(
                                                             symmetricKey = device.symmetricKey
                                                         )
                                                     }
-                                                }
+                                                },
+                                                enabled = !uiState.isKillSwitchModeEnabled
                                             )
                                         }
                                     }
@@ -876,6 +877,7 @@ fun AirSyncMainScreen(
 
                                                     Switch(
                                                         checked = uiState.isDeviceDiscoveryEnabled,
+                                                        enabled = !uiState.isKillSwitchModeEnabled,
                                                         onCheckedChange = { enabled ->
                                                             HapticUtil.performClick(haptics)
                                                             viewModel.setDeviceDiscoveryEnabled(

@@ -44,6 +44,7 @@ class AirSyncService : Service() {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var connectedDeviceName: String? = null
     private var isScanning = false
+    @Volatile private var isServiceStopping = false
 
     private var webDavServer: WebDavServer? = null
     private var webDavJob: Job? = null
@@ -256,13 +257,17 @@ class AirSyncService : Service() {
 
     private fun stopSync() {
         Log.d(TAG, "Stopping AirSync foreground service")
+        isServiceStopping = true
         webDavJob?.cancel()
         webDavJob = null
         stopWebDavServer()
         ShortcutUtil.refreshShortcuts(this, false)
         DiscoveryOrchestrator.stop(this)
         WakeupService.stopService(this)
+        WebSocketUtil.unregisterConnectionStatusListener(connectionStatusListener)
         stopForeground(STOP_FOREGROUND_REMOVE)
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(NOTIFICATION_ID)
         stopSelf()
     }
 
@@ -312,6 +317,7 @@ class AirSyncService : Service() {
     }
 
     private fun updateNotification() {
+        if (isServiceStopping) return
         try {
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.notify(NOTIFICATION_ID, buildNotification())
@@ -392,6 +398,9 @@ class AirSyncService : Service() {
         Log.d(TAG, "AirSyncService destroyed")
         serviceInstance = null
         WebSocketUtil.unregisterConnectionStatusListener(connectionStatusListener)
+        
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(NOTIFICATION_ID)
 
         networkCallback?.let {
             try {

@@ -141,4 +141,10 @@ interface AirSyncRepository {
     // Cellular Network Sync
     suspend fun setCellularSyncEnabled(enabled: Boolean)
     fun isCellularSyncEnabled(): Flow<Boolean>
+
+    // Kill Switch
+    suspend fun setKillSwitchModeEnabled(enabled: Boolean)
+    fun isKillSwitchModeEnabled(): Flow<Boolean>
+    suspend fun setKillSwitchSnapshot(snapshotJson: String)
+    fun getKillSwitchSnapshot(): Flow<String>
 }

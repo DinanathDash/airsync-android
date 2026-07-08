@@ -107,6 +107,10 @@ class DataStoreManager(private val context: Context) {
         private const val NETWORK_CONNECTIONS_PREFIX = "network_connections_"
         
         private val IS_CELLULAR_SYNC_ENABLED = booleanPreferencesKey("is_cellular_sync_enabled")
+        
+        // Kill Switch Mode
+        private val KILL_SWITCH_MODE_ENABLED = booleanPreferencesKey("kill_switch_mode_enabled")
+        private val KILL_SWITCH_SNAPSHOT = stringPreferencesKey("kill_switch_snapshot")
 
         private var instance: DataStoreManager? = null
 
@@ -1054,5 +1058,30 @@ class DataStoreManager(private val context: Context) {
 
     val isCellularSyncEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[IS_CELLULAR_SYNC_ENABLED] ?: true // Default to true
+    }
+
+    // Kill Switch Mode Methods
+    suspend fun setKillSwitchModeEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KILL_SWITCH_MODE_ENABLED] = enabled
+        }
+    }
+
+    fun isKillSwitchModeEnabled(): Flow<Boolean> {
+        return context.dataStore.data.map { preferences ->
+            preferences[KILL_SWITCH_MODE_ENABLED] ?: false
+        }
+    }
+
+    suspend fun setKillSwitchSnapshot(snapshotJson: String) {
+        context.dataStore.edit { preferences ->
+            preferences[KILL_SWITCH_SNAPSHOT] = snapshotJson
+        }
+    }
+
+    fun getKillSwitchSnapshot(): Flow<String> {
+        return context.dataStore.data.map { preferences ->
+            preferences[KILL_SWITCH_SNAPSHOT] ?: "{}"
+        }
     }
 }

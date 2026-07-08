@@ -8,7 +8,8 @@ import com.sameerasw.airsync.R
 fun SmartspacerCard(
     isSmartspacerShowWhenDisconnected: Boolean,
     onToggleSmartspacerShowWhenDisconnected: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     IconToggleItem(
         modifier = modifier,
@@ -16,6 +17,7 @@ fun SmartspacerCard(
         title = "Smartspacer",
         description = "Show Smartspacer when disconnected",
         isChecked = isSmartspacerShowWhenDisconnected,
+        enabled = enabled,
         onCheckedChange = onToggleSmartspacerShowWhenDisconnected
     )
 }

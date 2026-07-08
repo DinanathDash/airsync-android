@@ -13,7 +13,8 @@ fun MediaSyncCard(
     onToggleSendNowPlaying: (Boolean) -> Unit,
     isMacMediaControlsEnabled: Boolean,
     onToggleMacMediaControls: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         IconToggleItem(
@@ -21,15 +22,16 @@ fun MediaSyncCard(
             title = "Send now playing",
             description = "Share media playback details with desktop",
             isChecked = isSendNowPlayingEnabled,
+            enabled = enabled,
             onCheckedChange = onToggleSendNowPlaying
         )
         IconToggleItem(
             iconRes = R.drawable.rounded_smart_display_24,
-            title = "Show Mac Media Controls",
-            description = "Show media controls when Mac is playing music",
+            title = "Mac Media Controls",
+            description = "Allow Play/Pause/Skip from Mac",
             isChecked = isMacMediaControlsEnabled,
+            enabled = enabled,
             onCheckedChange = onToggleMacMediaControls
         )
     }
 }
-

@@ -23,7 +23,8 @@ fun ClipboardFeaturesCard(
     // Cellular Network Sync props
     isCellularSyncEnabled: Boolean,
     onToggleCellularSync: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         IconToggleItem(
@@ -31,14 +32,16 @@ fun ClipboardFeaturesCard(
             title = "Clipboard Sync",
             description = "Update Android clipboard automatically",
             isChecked = isClipboardSyncEnabled,
-            onCheckedChange = onToggleClipboardSync
+            onCheckedChange = onToggleClipboardSync,
+            enabled = enabled
         )
         IconToggleItem(
             iconRes = R.drawable.rounded_network_node_24,
             title = "Cellular Network Sync",
             description = "Sync 5G/4G status to Mac",
             isChecked = isCellularSyncEnabled,
-            onCheckedChange = onToggleCellularSync
+            onCheckedChange = onToggleCellularSync,
+            enabled = enabled
         )
         IconToggleItem(
             iconRes = R.drawable.outline_open_in_browser_24,
@@ -46,7 +49,7 @@ fun ClipboardFeaturesCard(
             description = continueBrowsingSubtitle,
             isChecked = isContinueBrowsingEnabled,
             onCheckedChange = onToggleContinueBrowsing,
-            enabled = isContinueBrowsingToggleEnabled
+            enabled = enabled && isContinueBrowsingToggleEnabled
         )
         IconToggleItem(
             iconRes = R.drawable.rounded_history_24,
@@ -54,7 +57,7 @@ fun ClipboardFeaturesCard(
             description = "Without replacing",
             isChecked = isKeepPreviousLinkEnabled,
             onCheckedChange = onToggleKeepPreviousLink,
-            enabled = isContinueBrowsingToggleEnabled
+            enabled = enabled
         )
     }
 }

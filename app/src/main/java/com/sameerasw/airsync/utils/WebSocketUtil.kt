@@ -720,7 +720,7 @@ object WebSocketUtil {
         ctx?.let { c ->
             try {
                 val ds = com.sameerasw.airsync.data.local.DataStoreManager.getInstance(c)
-                kotlinx.coroutines.runBlocking {
+                CoroutineScope(Dispatchers.IO).launch {
                     ds.setUserManuallyDisconnected(true)
                 }
             } catch (_: Exception) {
@@ -1012,6 +1012,9 @@ object WebSocketUtil {
                         }
                     }
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Normal cancellation, just release lock
+                releaseWifiLock()
             } catch (e: Exception) {
                 Log.e(TAG, "Error in smart auto-reconnect: ${e.message}")
                 releaseWifiLock()

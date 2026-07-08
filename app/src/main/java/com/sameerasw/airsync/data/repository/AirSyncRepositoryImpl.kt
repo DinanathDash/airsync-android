@@ -313,5 +313,20 @@ class AirSyncRepositoryImpl(
     override fun isCellularSyncEnabled(): Flow<Boolean> {
         return dataStoreManager.isCellularSyncEnabled
     }
+
+    override suspend fun setKillSwitchModeEnabled(enabled: Boolean) {
+        dataStoreManager.setKillSwitchModeEnabled(enabled)
+    }
+
+    override fun isKillSwitchModeEnabled(): Flow<Boolean> {
+        return dataStoreManager.isKillSwitchModeEnabled()
+    }
+
+    override suspend fun setKillSwitchSnapshot(snapshotJson: String) {
+        dataStoreManager.setKillSwitchSnapshot(snapshotJson)
+    }
+
+    override fun getKillSwitchSnapshot(): Flow<String> {
+        return dataStoreManager.getKillSwitchSnapshot()
     }
 }

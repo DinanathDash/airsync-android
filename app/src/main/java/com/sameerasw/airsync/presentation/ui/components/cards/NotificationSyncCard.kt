@@ -10,7 +10,8 @@ fun NotificationSyncCard(
     isNotificationSyncEnabled: Boolean,
     onToggleSync: (Boolean) -> Unit,
     onGrantPermissions: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     IconToggleItem(
         modifier = modifier,
@@ -18,14 +19,14 @@ fun NotificationSyncCard(
         title = "Notification Sync",
         description = if (!isNotificationEnabled) "❌ Notification access required" else null,
         isChecked = isNotificationSyncEnabled && isNotificationEnabled,
-        onCheckedChange = { enabled ->
+        enabled = enabled && isNotificationEnabled,
+        onCheckedChange = { isChecked ->
             if (isNotificationEnabled) {
-                onToggleSync(enabled)
+                onToggleSync(isChecked)
             } else {
                 onGrantPermissions()
             }
         },
-        enabled = isNotificationEnabled,
-        onDisabledClick = onGrantPermissions
+        onDisabledClick = if (enabled) onGrantPermissions else null
     )
 }

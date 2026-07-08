@@ -208,6 +208,17 @@ fun SettingsView(
                         viewModel.setNotifyOnCrashEnabled(enabled)
                     }
                 )
+
+                IconToggleItem(
+                    title = "Kill Switch Mode",
+                    description = "Completely halts all background processes and sync features to save battery",
+                    iconRes = R.drawable.rounded_devices_off_24,
+                    isChecked = uiState.isKillSwitchModeEnabled,
+                    onCheckedChange = { enabled ->
+                        HapticUtil.performClick(haptics)
+                        viewModel.toggleKillSwitchMode(context, enabled)
+                    }
+                )
             }
         }
 
@@ -218,6 +229,7 @@ fun SettingsView(
                 NotificationSyncCard(
                     isNotificationEnabled = uiState.isNotificationEnabled,
                     isNotificationSyncEnabled = uiState.isNotificationSyncEnabled,
+                    enabled = !uiState.isKillSwitchModeEnabled,
                     onToggleSync = { enabled ->
                         viewModel.setNotificationSyncEnabled(enabled)
                     },
@@ -230,6 +242,7 @@ fun SettingsView(
                         description = stringResource(R.string.subtitle_to_be_notified),
                         iconRes = R.drawable.rounded_notification_settings_24,
                         showToggle = false,
+                        enabled = !uiState.isKillSwitchModeEnabled,
                         onClick = {
                             HapticUtil.performClick(haptics)
                             viewModel.loadNotificationApps(context)
@@ -256,7 +269,8 @@ fun SettingsView(
                     isCellularSyncEnabled = uiState.isCellularSyncEnabled,
                     onToggleCellularSync = { enabled: Boolean ->
                         viewModel.toggleCellularSync(enabled)
-                    }
+                    },
+                    enabled = !uiState.isKillSwitchModeEnabled
                 )
 
                 MediaSyncCard(
@@ -267,7 +281,8 @@ fun SettingsView(
                     isMacMediaControlsEnabled = uiState.isMacMediaControlsEnabled,
                     onToggleMacMediaControls = { enabled ->
                         viewModel.setMacMediaControlsEnabled(enabled)
-                    }
+                    },
+                    enabled = !uiState.isKillSwitchModeEnabled
                 )
 
                 IconToggleItem(
@@ -275,6 +290,7 @@ fun SettingsView(
                     description = "Allow receiving files from nearby devices",
                     iconRes = R.drawable.quick_share,
                     isChecked = uiState.isQuickShareEnabled,
+                    enabled = !uiState.isKillSwitchModeEnabled,
                     onCheckedChange = { enabled: Boolean ->
                         viewModel.setQuickShareEnabled(context, enabled)
                     }
@@ -285,6 +301,7 @@ fun SettingsView(
                     description = stringResource(R.string.subtitle_file_access),
                     iconRes = R.drawable.rounded_folder_managed_24,
                     isChecked = uiState.isFileAccessEnabled,
+                    enabled = !uiState.isKillSwitchModeEnabled,
                     onCheckedChange = { enabled: Boolean ->
                         viewModel.setFileAccessEnabled(context, enabled)
                     }
@@ -301,7 +318,8 @@ fun SettingsView(
                     isSmartspacerShowWhenDisconnected = uiState.isSmartspacerShowWhenDisconnected,
                     onToggleSmartspacerShowWhenDisconnected = { enabled: Boolean ->
                         viewModel.setSmartspacerShowWhenDisconnected(enabled)
-                    }
+                    },
+                    enabled = !uiState.isKillSwitchModeEnabled
                 )
 
                 val isEssentialsInstalled = try {
@@ -317,6 +335,7 @@ fun SettingsView(
                         description = androidx.compose.ui.res.stringResource(com.sameerasw.airsync.R.string.connect_to_essentials_summary),
                         iconRes = R.drawable.essentials_icon,
                         isChecked = uiState.isEssentialsConnectionEnabled,
+                        enabled = !uiState.isKillSwitchModeEnabled,
                         onCheckedChange = { enabled: Boolean ->
                             viewModel.setEssentialsConnectionEnabled(enabled)
                         }

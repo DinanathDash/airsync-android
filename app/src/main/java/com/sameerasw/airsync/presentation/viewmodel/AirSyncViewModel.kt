@@ -390,6 +390,7 @@ class AirSyncViewModel(
             val isQuickShareEnabled = repository.isQuickShareEnabled().first()
             val isNotifyOnCrashEnabled = repository.getNotifyOnCrashEnabled().first()
             val isCellularSyncEnabled = repository.isCellularSyncEnabled().first()
+            val isKillSwitchModeEnabled = repository.isKillSwitchModeEnabled().first()
 
             // Replicate Essentials logic for initial state
             val isBlurEnabled = isBlurEnabledSetting && !isPowerSaveMode && !isBlurProblematic
@@ -436,7 +437,7 @@ class AirSyncViewModel(
                 isNotificationSyncEnabled = isNotificationSyncEnabled,
                 isDeveloperMode = isDeveloperMode,
                 isClipboardSyncEnabled = isClipboardSyncEnabled,
-                isAutoReconnectEnabled = isAutoReconnectEnabled,
+                isAutoReconnectEnabled = if (isKillSwitchModeEnabled) false else isAutoReconnectEnabled,
                 isConnected = currentlyConnected,
                 symmetricKey = symmetricKey ?: lastConnectedSymmetricKey,
                 isContinueBrowsingEnabled = isContinueBrowsingEnabled,
@@ -446,7 +447,7 @@ class AirSyncViewModel(
                 isClipboardHistoryEnabled = isClipboardHistoryEnabled,
                 defaultTab = defaultTab,
                 isEssentialsConnectionEnabled = isEssentialsConnectionEnabled,
-                isDeviceDiscoveryEnabled = isDeviceDiscoveryEnabled,
+                isDeviceDiscoveryEnabled = if (isKillSwitchModeEnabled) false else isDeviceDiscoveryEnabled,
                 isBlurSettingEnabled = isBlurEnabledSetting,
                 isPowerSaveMode = isPowerSaveMode,
                 isPitchBlackThemeEnabled = isPitchBlackThemeEnabled,
@@ -454,7 +455,8 @@ class AirSyncViewModel(
                 isOnboardingCompleted = !isFirstRun,
                 isQuickShareEnabled = isQuickShareEnabled,
                 isNotifyOnCrashEnabled = isNotifyOnCrashEnabled,
-                isCellularSyncEnabled = isCellularSyncEnabled
+                isCellularSyncEnabled = isCellularSyncEnabled,
+                isKillSwitchModeEnabled = isKillSwitchModeEnabled
             )
 
             updateRatingPromptDisplay()
@@ -799,6 +801,91 @@ class AirSyncViewModel(
                     isIconSyncLoading = false,
                     iconSyncMessage = message
                 )
+            }
+        }
+    }
+
+    fun toggleKillSwitchMode(context: Context, enabled: Boolean) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isKillSwitchModeEnabled = enabled)
+            repository.setKillSwitchModeEnabled(enabled)
+
+            if (enabled) {
+                // Save current state as JSON
+                val currentStateJson = org.json.JSONObject().apply {
+                    put("isAutoReconnectEnabled", _uiState.value.isAutoReconnectEnabled)
+                    put("isDeviceDiscoveryEnabled", _uiState.value.isDeviceDiscoveryEnabled)
+                    put("isQuickShareEnabled", _uiState.value.isQuickShareEnabled)
+                    put("isNotificationSyncEnabled", _uiState.value.isNotificationSyncEnabled)
+                    put("isClipboardSyncEnabled", _uiState.value.isClipboardSyncEnabled)
+                    put("isFileAccessEnabled", _uiState.value.isFileAccessEnabled)
+                    put("isCellularSyncEnabled", _uiState.value.isCellularSyncEnabled)
+                    put("isSendNowPlayingEnabled", _uiState.value.isSendNowPlayingEnabled)
+                    put("isMacMediaControlsEnabled", _uiState.value.isMacMediaControlsEnabled)
+                    put("isContinueBrowsingEnabled", _uiState.value.isContinueBrowsingEnabled)
+                    put("isEssentialsConnectionEnabled", _uiState.value.isEssentialsConnectionEnabled)
+                }.toString()
+                repository.setKillSwitchSnapshot(currentStateJson)
+
+                // Turn off key switches
+                setAutoReconnectEnabled(false)
+                setDeviceDiscoveryEnabled(context, false)
+                setQuickShareEnabled(context, false)
+                setNotificationSyncEnabled(false)
+                setClipboardSyncEnabled(false)
+                setFileAccessEnabled(context, false)
+                toggleCellularSync(false)
+                setSendNowPlayingEnabled(false)
+                setMacMediaControlsEnabled(false)
+                setContinueBrowsingEnabled(false)
+                setEssentialsConnectionEnabled(false)
+                
+                // Disconnect active connections
+                try {
+                    WebSocketUtil.disconnect()
+                } catch (e: Exception) {
+                    // Ignore
+                }
+                try {
+                    com.sameerasw.airsync.AirSyncApp.getBleConnectionManager()?.disconnectAllConnectedDevices()
+                } catch (e: Exception) {
+                    // Ignore
+                }
+
+                // Explicitly stop services
+                com.sameerasw.airsync.service.AirSyncService.stop(context)
+                context.stopService(Intent(context, com.sameerasw.airsync.quickshare.QuickShareService::class.java))
+                
+                // Show toast
+                launch(Dispatchers.Main) {
+                    android.widget.Toast.makeText(context, "Kill Switch Mode ON: All background processes stopped", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                // Restore from snapshot
+                val snapshotJson = repository.getKillSwitchSnapshot().first()
+                if (snapshotJson.isNotEmpty() && snapshotJson != "{}") {
+                    try {
+                        val json = org.json.JSONObject(snapshotJson)
+                        setAutoReconnectEnabled(json.optBoolean("isAutoReconnectEnabled", true))
+                        setDeviceDiscoveryEnabled(context, json.optBoolean("isDeviceDiscoveryEnabled", true))
+                        setQuickShareEnabled(context, json.optBoolean("isQuickShareEnabled", false))
+                        setNotificationSyncEnabled(json.optBoolean("isNotificationSyncEnabled", true))
+                        setClipboardSyncEnabled(json.optBoolean("isClipboardSyncEnabled", true))
+                        setFileAccessEnabled(context, json.optBoolean("isFileAccessEnabled", true))
+                        toggleCellularSync(json.optBoolean("isCellularSyncEnabled", true))
+                        setSendNowPlayingEnabled(json.optBoolean("isSendNowPlayingEnabled", true))
+                        setMacMediaControlsEnabled(json.optBoolean("isMacMediaControlsEnabled", true))
+                        setContinueBrowsingEnabled(json.optBoolean("isContinueBrowsingEnabled", true))
+                        setEssentialsConnectionEnabled(json.optBoolean("isEssentialsConnectionEnabled", false))
+                    } catch (e: Exception) {
+                        android.util.Log.e("AirSyncViewModel", "Failed to restore Kill Switch snapshot", e)
+                    }
+                }
+                
+                // Show toast
+                launch(Dispatchers.Main) {
+                    android.widget.Toast.makeText(context, "Kill Switch Mode OFF: Previous states restored", android.widget.Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
