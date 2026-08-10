@@ -58,6 +58,8 @@ class AirSyncService : Service() {
         }
     }
 
+    private var cachedLastDevice: com.sameerasw.airsync.domain.model.ConnectedDevice? = null
+
     override fun onCreate() {
         super.onCreate()
         serviceInstance = this
@@ -81,6 +83,14 @@ class AirSyncService : Service() {
         }
         registerNetworkCallback()
         WebSocketUtil.registerConnectionStatusListener(connectionStatusListener)
+
+        val dataStoreManager = DataStoreManager.getInstance(applicationContext)
+        scope.launch {
+            dataStoreManager.getLastConnectedDevice().collect { device ->
+                cachedLastDevice = device
+                updateNotification()
+            }
+        }
 
         // Monitor connection status, auto-reconnect, and battery status to update notification live
         scope.launch {
@@ -139,23 +149,22 @@ class AirSyncService : Service() {
             startForeground(NOTIFICATION_ID, buildNotification())
         }
 
-        val dataStoreManager =
-            DataStoreManager.getInstance(applicationContext)
-        val isDiscoveryEnabled = runBlocking {
-            dataStoreManager.getDeviceDiscoveryEnabled().first()
+        scope.launch {
+            val dataStoreManager = DataStoreManager.getInstance(applicationContext)
+            val isDiscoveryEnabled = dataStoreManager.getDeviceDiscoveryEnabled().first()
+
+            // Default to PASSIVE mode to save battery
+            // But do a burst to check for devices immediately
+            DiscoveryOrchestrator.start(this@AirSyncService, isDiscoveryEnabled)
+            DiscoveryOrchestrator.setDiscoveryMode(this@AirSyncService, DiscoveryMode.PASSIVE)
+            DiscoveryOrchestrator.burstBroadcast(this@AirSyncService)
+
+            // Start WakeupService for HTTP wakeups
+            WakeupService.startService(this@AirSyncService)
+
+            // Also trigger auto-reconnect logic to check if we already have a candidate
+            WebSocketUtil.requestAutoReconnect(this@AirSyncService)
         }
-
-        // Default to PASSIVE mode to save battery
-        // But do a burst to check for devices immediately
-        DiscoveryOrchestrator.start(this, isDiscoveryEnabled)
-        DiscoveryOrchestrator.setDiscoveryMode(this, DiscoveryMode.PASSIVE)
-        DiscoveryOrchestrator.burstBroadcast(this)
-
-        // Start WakeupService for HTTP wakeups
-        WakeupService.startService(this)
-
-        // Also trigger auto-reconnect logic to check if we already have a candidate
-        WebSocketUtil.requestAutoReconnect(this)
     }
 
     private fun startWebDavServer() {
@@ -240,19 +249,18 @@ class AirSyncService : Service() {
             startForeground(NOTIFICATION_ID, buildNotification())
         }
 
-        val dataStoreManager =
-            DataStoreManager.getInstance(applicationContext)
-        val isDiscoveryEnabled = runBlocking {
-            dataStoreManager.getDeviceDiscoveryEnabled().first()
+        scope.launch {
+            val dataStoreManager = DataStoreManager.getInstance(applicationContext)
+            val isDiscoveryEnabled = dataStoreManager.getDeviceDiscoveryEnabled().first()
+
+            // Keep discovery manager running for wake-ups even when connected
+            // But stay in Passive mode mostly
+            DiscoveryOrchestrator.start(this@AirSyncService, isDiscoveryEnabled)
+            DiscoveryOrchestrator.setDiscoveryMode(this@AirSyncService, DiscoveryMode.PASSIVE)
+
+            WakeupService.startService(this@AirSyncService)
+            monitorWebDavRequirements()
         }
-
-        // Keep discovery manager running for wake-ups even when connected
-        // But stay in Passive mode mostly
-        DiscoveryOrchestrator.start(this, isDiscoveryEnabled)
-        DiscoveryOrchestrator.setDiscoveryMode(this, DiscoveryMode.PASSIVE)
-
-        WakeupService.startService(this)
-        monitorWebDavRequirements()
     }
 
     private fun stopSync() {
@@ -288,9 +296,11 @@ class AirSyncService : Service() {
                     // Refresh UDP socket to bind to new network interface
                     DiscoveryOrchestrator.refreshSocket()
                     // When network becomes available, do a burst to announce ourselves
-                    if (isScanning) {
+                    if (isScanning && !com.sameerasw.airsync.data.ble.BleGattServer.isAnyAuthenticated()) {
                         DiscoveryOrchestrator.burstBroadcast(applicationContext)
                         WebSocketUtil.requestAutoReconnect(applicationContext)
+                    } else if (isScanning) {
+                        DiscoveryOrchestrator.burstBroadcast(applicationContext)
                     }
                 }
             }
@@ -348,8 +358,7 @@ class AirSyncService : Service() {
         val isAuto = WebSocketUtil.isAutoReconnecting()
         val isConnecting = WebSocketUtil.isConnecting()
 
-        val dataStoreManager = DataStoreManager.getInstance(applicationContext)
-        val lastDevice = runBlocking { dataStoreManager.getLastConnectedDevice().first() }
+        val lastDevice = cachedLastDevice
         val macStatus = MacDeviceStatusManager.macDeviceStatus.value
 
         if (isConnected && lastDevice != null) {
