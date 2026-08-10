@@ -66,7 +66,7 @@ class AirSyncService : Service() {
         Log.d(TAG, "AirSyncService created")
         createNotificationChannel()
         MacDeviceStatusManager.startMonitoring(this)
-        val dataStoreManager = com.sameerasw.airsync.data.local.DataStoreManager(this)
+        val dataStoreManager = DataStoreManager.getInstance(applicationContext)
         scope.launch {
             combine(
                 dataStoreManager.isCellularSyncEnabled,
@@ -84,7 +84,6 @@ class AirSyncService : Service() {
         registerNetworkCallback()
         WebSocketUtil.registerConnectionStatusListener(connectionStatusListener)
 
-        val dataStoreManager = DataStoreManager.getInstance(applicationContext)
         scope.launch {
             dataStoreManager.getLastConnectedDevice().collect { device ->
                 cachedLastDevice = device
